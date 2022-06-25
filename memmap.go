@@ -135,9 +135,13 @@ func (m *MemMapFs) Mkdir(name string, perm os.FileMode) error {
 	name = normalizePath(name)
 
 	m.mu.RLock()
-	_, ok := m.getData()[name]
+	fd, ok := m.getData()[name]
 	m.mu.RUnlock()
 	if ok {
+		i := mem.FileInfo{FileData: fd}
+		if i.IsDir() {
+			return nil
+		}
 		return &os.PathError{Op: "mkdir", Path: name, Err: ErrFileExists}
 	}
 
@@ -154,9 +158,6 @@ func (m *MemMapFs) Mkdir(name string, perm os.FileMode) error {
 func (m *MemMapFs) MkdirAll(path string, perm os.FileMode) error {
 	err := m.Mkdir(path, perm)
 	if err != nil {
-		if err.(*os.PathError).Err == ErrFileExists {
-			return nil
-		}
 		return err
 	}
 	return nil
